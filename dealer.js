@@ -1,18 +1,23 @@
 on('chat:message', (msg) => {
     if ('api' === msg.type && /!deal\b/i.test(msg.content) && msg.selected) {
-
-        //get arguments
+        //        log(msg);
+        //get parameter and use default of 'give' if parameter is missing or malformed
         const args = msg.content.split(/\s+--/);
-        
-       // use default of 'give' if parameter is missing or malformed
+
+        let action = args[1].split(/\s+/)[0];
+        let numCards = args[1].split(/\s+/)[1];
+        numCards = Number((Number.isInteger(Number(numCards))) ? numCards : 1);
+        log("numCards = "+numCards)
+
+
         const actions = ['give', 'take'];
         let cardAction = 'give';
-        if (args[1] && actions.includes(args[1])) {
-            cardAction = args[1];
+        if (action && actions.includes(action)) {
+            cardAction = action;
         }
-        
-        //Use 'Playing Cards' if deck is not specified
         let deckChoice = args[2] || 'Playing Cards';
+log('card action is '+cardAction);
+        do {
 
         //getid of deck
         let theDeck = findObjs({
@@ -34,7 +39,11 @@ on('chat:message', (msg) => {
         //shuffleDeck(deckID);
         //get id of card
         let cardid = drawCard(deckID);
-
+        
+        if (!cardid){
+        shuffleDeck(deckID);
+cardid = drawCard(deckID);
+}
         // get playerId of Token controller
         //assign selected token to a variable
 
@@ -94,8 +103,14 @@ on('chat:message', (msg) => {
 
                 break;
             default:
-                giveCardToPlayer(cardid, ownerid);
-                break;
-        }
+                    giveCardToPlayer(cardid, ownerid);
+                    break;
+            }
+
+        
+        numCards--;
+        log("numCards = "+numCards)
+    }
+    while (numCards > 0);
     }
 });
