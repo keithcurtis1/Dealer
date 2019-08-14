@@ -14,9 +14,6 @@ on('chat:message', (msg) => {
         //Use 'Playing Cards' if deck is not specified
         let deckChoice = args[2] || 'Playing Cards';
 
-        log('cardAction is ' + cardAction);
-        log('deckChoice is ' + deckChoice);
-
         //getid of deck
         let theDeck = findObjs({
             _type: "deck",
@@ -41,7 +38,6 @@ on('chat:message', (msg) => {
         // get playerId of Token controller
         //assign selected token to a variable
 
-        log('number of tokens selected is ' + msg.selected.length);
         if (msg.selected.length > 1) {
             sendChat('Deal', '/w gm Please select only one token. It must represent player-controlled character.');
             return;
@@ -57,8 +53,6 @@ on('chat:message', (msg) => {
         let character = getObj("character", token.get('represents'));
 
         //Get owner IDs of each -- Not needed at this point
-        //tokenOwner = (token.get('controlledby').split(',')[0]);
-        //characterOwner = (character.get('controlledby').split(',')[0]);
         // If the token represents a character, get the character's controller, otherwise the token's
         let ownerids = (token.get('controlledby').split(','));
 
@@ -85,12 +79,8 @@ on('chat:message', (msg) => {
                     parentid: ownerid
                 })[0];
                 let theHand = hand.get('currentHand');
-                log('The cards in hand are  ' + theHand);
 
                 cardid = (theHand.split(',').filter(x => deckCards.split(',').includes(x)))[0];
-
-                log('The card to take is ' + cardid);
-
 
                 if (theHand.length !== 0 && cardid !== undefined) {
 
