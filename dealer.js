@@ -3,22 +3,21 @@ on('chat:message', (msg) => {
         //        log(msg);
         //get parameter and use default of 'give' if parameter is missing or malformed
         const args = msg.content.split(/\s+--/);
-//log('failure first' + args[0]);
-//log('length of args ' + args.length);
 
-if(args.length < 2) {
-    if(args[0] !== '!deal'){
-            sendChat('Deal', '/w gm Malformed command. Please use !deal --[give/take] --[Deckname].');
-    return;
-}else{
-    args[1]='give';
-}}
+        if (args.length < 2) {
+            if (args[0] !== '!deal') {
+                sendChat('Deal', '/w gm Malformed command. Please use !deal --[give/take] --[Deckname].');
+                return;
+            } else {
+                args[1] = 'give';
+            }
+        }
         let action = args[1].split(/\s+/)[0];
 
 
         let numCards = args[1].split(/\s+/)[1];
         numCards = Number((Number.isInteger(Number(numCards))) ? numCards : 1);
-        log("numCards = "+numCards)
+        log("numCards = " + numCards)
 
 
         const actions = ['give', 'take'];
@@ -27,7 +26,7 @@ if(args.length < 2) {
             cardAction = action;
         }
         let deckChoice = args[2] || 'Playing Cards';
-log('card action is '+cardAction);
+        log('card action is ' + cardAction);
 
         //getid of deck
         let theDeck = findObjs({
@@ -44,10 +43,8 @@ log('card action is '+cardAction);
 
         let deckID = theDeck.id;
         let deckCards = theDeck.get('_currentDeck');
-        log('The deck cards are ' + deckCards);
-        // Necessary to shuffle at least once after deck creation because of Roll20 Deck bug
-        //shuffleDeck(deckID);
-              if (msg.selected.length > 1) {
+
+        if (msg.selected.length > 1) {
             sendChat('Deal', '/w gm Please select only one token. It must represent player-controlled character.');
             return;
         }
@@ -79,53 +76,53 @@ log('card action is '+cardAction);
             sendChat('deal', '/w gm If a token represents a character controlled by \'All Players\', an individual player must be also be specified. If there are multiple controllers, only the first will get inspiration.');
             return;
         }
-        
-        
-                do {
 
-        //get id of card
-        let cardid = drawCard(deckID);
-        
-        if (!cardid){
-        shuffleDeck(deckID);
-cardid = drawCard(deckID);
-}
-        // get playerId of Token controller
-        //assign selected token to a variable
 
-  
+        do {
 
-        switch (cardAction) {
-            case 'take':
+            //get id of card
+            let cardid = drawCard(deckID);
 
-                let hand = findObjs({
-                    type: 'hand',
-                    parentid: ownerid
-                })[0];
-                let theHand = hand.get('currentHand');
+            if (!cardid) {
+                shuffleDeck(deckID);
+                cardid = drawCard(deckID);
+            }
+            // get playerId of Token controller
+            //assign selected token to a variable
 
-                cardid = (theHand.split(',').filter(x => deckCards.split(',').includes(x)))[0];
 
-                if (theHand.length !== 0 && cardid !== undefined) {
 
-                    takeCardFromPlayer(ownerid, {
-                        cardid: cardid
-                    });
-                } else {
-                    let deckName = theDeck.get('name');
-                    sendChat('deal', '/w gm ' + token.get('name') + ' has no cards left to take from the ' + deckName + ' deck.');
-                }
+            switch (cardAction) {
+                case 'take':
 
-                break;
-            default:
+                    let hand = findObjs({
+                        type: 'hand',
+                        parentid: ownerid
+                    })[0];
+                    let theHand = hand.get('currentHand');
+
+                    cardid = (theHand.split(',').filter(x => deckCards.split(',').includes(x)))[0];
+
+                    if (theHand.length !== 0 && cardid !== undefined) {
+
+                        takeCardFromPlayer(ownerid, {
+                            cardid: cardid
+                        });
+                    } else {
+                        let deckName = theDeck.get('name');
+                        sendChat('deal', '/w gm ' + token.get('name') + ' has no cards left to take from the ' + deckName + ' deck.');
+                    }
+
+                    break;
+                default:
                     giveCardToPlayer(cardid, ownerid);
                     break;
             }
 
-        
-        numCards--;
-        log("numCards = "+numCards)
-    }
-    while (numCards > 0);
+
+            numCards--;
+            log("numCards = " + numCards)
+        }
+        while (numCards > 0);
     }
 });
