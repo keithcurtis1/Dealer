@@ -1,109 +1,109 @@
 // Dealer
-// Last Updated: 2019-08-16
+// Last Updated: 2019-09-03
 // A script to deal and take cards to selected users from specified decks.
-// Syntax is !deal --[give,take] [number of cards as integer] --[deck name]
+// Syntax is !deal --[give,take] [number of cards as integer] --[deck name]|[card name]
 on('ready', () => {
     const version = '1.1.0';
     log('-=> Dealer v' + version + ' <=-');
 
     on('chat:message', (msg) => {
-            if ('api' === msg.type && /!deal\b/i.test(msg.content) && msg.selected) {
+        if ('api' === msg.type && /!deal\b/i.test(msg.content) && msg.selected) {
 
 
-                //get parameter and use default of 'give' if parameter is missing or malformed
-                const args = msg.content.split(/\s+--/);
+            //get parameter and use default of 'give' if parameter is missing or malformed
+            const args = msg.content.split(/\s+--/);
 
-                if (args.length < 2) {
-                    if (args[0] !== '!deal') {
-                        sendChat('Deal', '/w gm Malformed command. Please use !deal --[give/take] --[Deckname].');
-                        return;
-                    } else {
-                        args[1] = 'give';
-                    }
+            if (args.length < 2) {
+                if (args[0] !== '!deal') {
+                    sendChat('Deal', '/w gm Malformed command. Please use !deal --[give/take] --[Deckname].');
+                    return;
+                } else {
+                    args[1] = 'give';
                 }
-                let action = args[1].split(/\s+/)[0];
+            }
+            let action = args[1].split(/\s+/)[0];
 
 
-                let numCards = args[1].split(/\s+/)[1];
-                numCards = Number((Number.isInteger(Number(numCards))) ? numCards : 1);
+            let numCards = args[1].split(/\s+/)[1];
+            numCards = Number((Number.isInteger(Number(numCards))) ? numCards : 1);
 
-                const actions = ['give', 'take'];
-                let cardAction = 'give';
-                if (action && actions.includes(action)) {
-                    cardAction = action;
-                }
-                let choices = args[2] || 'Playing Cards';
-
-
-                let deckChoice = choices.split(/\|/)[0] || 'Playing Cards';
-                let cardChoice = choices.split(/\|/)[1] || '';
+            const actions = ['give', 'take'];
+            let cardAction = 'give';
+            if (action && actions.includes(action)) {
+                cardAction = action;
+            }
+            let choices = args[2] || 'Playing Cards';
 
 
+            let deckChoice = choices.split(/\|/)[0] || 'Playing Cards';
+            let cardChoice = choices.split(/\|/)[1] || '';
 
-                //getid of deck
-                let theDeck = findObjs({
-                    _type: "deck",
-                    name: deckChoice
+
+
+            //getid of deck
+            let theDeck = findObjs({
+                _type: "deck",
+                name: deckChoice
+            })[0];
+
+            //test if deck exists
+            if (!theDeck) {
+                sendChat('Deal', '/w gm Create a deck named ' + deckChoice + '. If the intent is an Inspiration deck, it must be an infinite deck of one card only.');
+                return;
+            }
+
+
+            let deckID = theDeck.id;
+            let deckCards = theDeck.get('_currentDeck');
+
+
+
+            if (msg.selected.length > 1) {
+                sendChat('Deal', '/w gm Please select only one token. It must represent player-controlled character.');
+                return;
+            }
+
+            let token = getObj(msg.selected[0]._type, msg.selected[0]._id);
+
+            //assign associated character to a variable
+            if (!token.get('represents')) {
+                sendChat('Deal', '/w gm This token does not represent a player character. Only players get cards.');
+                return;
+            }
+            let character = getObj("character", token.get('represents'));
+
+            //Get owner IDs of each -- Not needed at this point
+            // If the token represents a character, get the character's controller, otherwise the token's
+            let ownerids = (token.get('controlledby').split(','));
+
+
+            if (character) {
+                ownerids = (character.get('controlledby').split(','));
+            }
+            //reduces to one ownerid that is not ['all']
+            ownerid = ownerids.filter(s => s !== 'all')[0];
+
+
+            // give card to player
+            // If the ownerid is undefined (no valid controller) explain and exit
+            if (!ownerid) {
+                sendChat('deal', '/w gm If a token represents a character controlled by \'All Players\', an individual player must be also be specified. If there are multiple controllers, only the first will get inspiration.');
+                return;
+            }
+
+            //If a card is specified by name
+            if (cardChoice !== '') {
+                let theCard = findObjs({
+                    _type: 'card',
+                    name: cardChoice,
+                    _deckid: deckID
                 })[0];
 
-                //test if deck exists
-                if (!theDeck) {
-                    sendChat('Deal', '/w gm Create a deck named ' + deckChoice + '. If the intent is an Inspiration deck, it must be an infinite deck of one card only.');
-                    return;
-                }
+                if (theCard !== undefined) {
+                    do {
+                        let specificCardID = theCard.id;
 
-
-                let deckID = theDeck.id;
-                let deckCards = theDeck.get('_currentDeck');
-
-
-
-                if (msg.selected.length > 1) {
-                    sendChat('Deal', '/w gm Please select only one token. It must represent player-controlled character.');
-                    return;
-                }
-
-                let token = getObj(msg.selected[0]._type, msg.selected[0]._id);
-
-                //assign associated character to a variable
-                if (!token.get('represents')) {
-                    sendChat('Deal', '/w gm This token does not represent a player character. Only players get cards.');
-                    return;
-                }
-                let character = getObj("character", token.get('represents'));
-
-                //Get owner IDs of each -- Not needed at this point
-                // If the token represents a character, get the character's controller, otherwise the token's
-                let ownerids = (token.get('controlledby').split(','));
-
-
-                if (character) {
-                    ownerids = (character.get('controlledby').split(','));
-                }
-                //reduces to one ownerid that is not ['all']
-                ownerid = ownerids.filter(s => s !== 'all')[0];
-
-
-                // give card to player
-                // If the ownerid is undefined (no valid controller) explain and exit
-                if (!ownerid) {
-                    sendChat('deal', '/w gm If a token represents a character controlled by \'All Players\', an individual player must be also be specified. If there are multiple controllers, only the first will get inspiration.');
-                    return;
-                }
-
-                //If a card is specified by name
-                if (cardChoice !== '') {
-                    let theCard = findObjs({
-                        _type: 'card',
-                        name: cardChoice,
-                        _deckid: deckID
-                    })[0];
-
-                    if (theCard !== undefined) {
-                        do {
-                            let specificCardID = theCard.id;
-
-                            giveCardToPlayer(specificCardID, ownerid);
+                        giveCardToPlayer(specificCardID, ownerid);
                         numCards--;
                     }
                     while (numCards > 0);
@@ -157,7 +157,6 @@ on('ready', () => {
                 }
 
                 numCards--;
-                log("numCards = " + numCards)
             }
             while (numCards > 0);
         }
